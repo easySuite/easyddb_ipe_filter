@@ -1,0 +1,101 @@
+<?php
+/**
+ * @file
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function easyddb_ipe_filter_menu() {
+  $items['admin/config/user-interface/ipe-filter'] = array(
+    'title' => 'IPE pane filter',
+    'description' => 'Choose what content should be displayed on the add content modal page.',
+    'page callback' => 'drupal_get_form',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer pane access'),
+    'page arguments' => array('easyddb_ipe_filter_admin'),
+    'file' => 'easyddb_ipe_filter.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function easyddb_ipe_filter_theme() {
+  return array(
+    'easyddb_ipe_filter_table' => array(
+      'render element' => 'form',
+    ),
+  );
+}
+
+/**
+ * Implements theme_hook().
+ */
+function theme_easyddb_ipe_filter_table($variables) {
+  $form = $variables['form'];
+  $header = $form['#header'];
+
+  $content = array(
+    'header' => $header,
+    'rows' => array(),
+  );
+  foreach (element_children($form) as $row_index) {
+    if (isset($form[$row_index]['title'])) {
+      $content['rows'][] = array(
+        drupal_render($form[$row_index]['title']),
+        drupal_render($form[$row_index]['value']),
+      );
+    }
+    else {
+      $content['rows'][] = array(array(
+        'data' => drupal_render($form[$row_index]),
+        'colspan' => 2,
+        'header' => TRUE,
+      ));
+    }
+  }
+  $output = theme('table', $content);
+  $output .= drupal_render_children($form);
+  return $output;
+}
+
+/**
+ * Impalements hook_theme_registry_alter().
+ */
+function easyddb_ipe_filter_theme_registry_alter(&$registry) {
+  $registry['panels_add_content_modal']['function'] = '_easyddb_ipe_filter_callback';
+}
+
+/**
+ * Filter panes callback
+ */
+function _easyddb_ipe_filter_callback($vars) {
+  $assets_loaded = &drupal_static('ipe_assets_loaded', FALSE);
+  $settings = variable_get('easyddb_ipe_filter', array());
+
+  $buttons = array();
+  $menu_width = 300;
+  $attributes = array(
+    'class' => 'ctools-use-modal',
+    'style' => 'width: ' . $menu_width . 'px; height: auto',
+  );
+
+  foreach ($settings as $subtype_name => $setting) {
+    foreach ($vars['categories'][$setting]['content'] as $content) {
+      if ($subtype_name == $content['subtype_name']) {
+        $buttons[] = l($content['title'], $vars['renderer']->get_url('add-pane', $vars['region'], $content['type_name'], $subtype_name), array('attributes' => $attributes));
+      }
+    }
+
+  }
+  $buttons = '<div id="ipe-add-' . $vars['region'] . '" class="panels-ipe-newblock ipe-popup">' . theme('item_list', array('items' => $buttons)) . '</div>';
+
+  if (!$assets_loaded) {
+    $mod_path = drupal_get_path('module', 'easyddb_ipe_filter');
+    drupal_add_css($mod_path . '/css/ipe.css', 'file');
+    $assets_loaded = TRUE;
+  }
+  return '<div class="panels-ipe-newblock panels-ipe-on">' . $buttons . '</div>';
+}
