@@ -2,6 +2,8 @@
 /**
  * @file
  */
+include_once 'easyddb_ipe_filter.features.inc';
+
 
 /**
  * Implements hook_menu().
@@ -73,7 +75,7 @@ function easyddb_ipe_filter_theme_registry_alter(&$registry) {
  */
 function _easyddb_ipe_filter_callback($vars) {
   $assets_loaded = &drupal_static('ipe_assets_loaded', FALSE);
-  $settings = variable_get('easyddb_ipe_filter', array());
+  $settings = variable_get('easyddb_ipe_filter_table', array());
 
   $buttons = array();
   $menu_width = 300;
@@ -83,12 +85,13 @@ function _easyddb_ipe_filter_callback($vars) {
   );
 
   foreach ($settings as $subtype_name => $setting) {
-    foreach ($vars['categories'][$setting]['content'] as $content) {
-      if ($subtype_name == $content['subtype_name']) {
-        $buttons[] = l($content['title'], $vars['renderer']->get_url('add-pane', $vars['region'], $content['type_name'], $subtype_name), array('attributes' => $attributes));
+    if ($setting['value'] == 1) {
+      foreach ($vars['categories'][$setting['category']]['content'] as $content) {
+        if ($subtype_name == $content['subtype_name']) {
+          $buttons[] = l($content['title'], $vars['renderer']->get_url('add-pane', $vars['region'], $content['type_name'], $subtype_name), array('attributes' => $attributes));
+        }
       }
     }
-
   }
   $buttons = '<div id="ipe-add-' . $vars['region'] . '" class="panels-ipe-newblock ipe-popup">' . theme('item_list', array('items' => $buttons)) . '</div>';
 
