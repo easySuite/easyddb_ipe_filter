@@ -13,48 +13,35 @@
   $categories = $panel_editor->get_categories($content_types);
 
   $form = array('#tree' => TRUE);
-  $form['table'] = array(
+  $form['easyddb_ipe_filter_table'] = array(
     '#theme' => 'easyddb_ipe_filter_table',
     '#header' => array(t('Content'), t('Show')),
   );
 
-  $settings = variable_get('easyddb_ipe_filter', array());
+  $settings = variable_get('easyddb_ipe_filter_table', array());
   foreach ($categories as $key => $category) {
-    $form['table'][$key] = array(
+    $form['easyddb_ipe_filter_table'][$key] = array(
      '#type' => 'item',
      '#markup' => $category['title'],
     );
     foreach ($category['content'] as $content) {
-      $form['table'][$content['subtype_name']]['title'] = array(
+      $form['easyddb_ipe_filter_table'][$content['subtype_name']]['title'] = array(
        '#type' => 'item',
        '#markup' => $content['title'],
       );
-      $form['table'][$content['subtype_name']]['value'] = array(
+      $value = 0;
+      if (isset($settings[$content['subtype_name']]['value']) && $settings[$content['subtype_name']]['value'] == 1) {
+        $value = 1;
+      }
+      $form['easyddb_ipe_filter_table'][$content['subtype_name']]['value'] = array(
        '#type' => 'checkbox',
-       '#default_value' => (isset($settings[$content['subtype_name']])) ? 1 : FALSE,
+       '#default_value' => $value,
       );
-      $form['table'][$content['subtype_name']]['category'] = array(
+      $form['easyddb_ipe_filter_table'][$content['subtype_name']]['category'] = array(
         '#type' => 'hidden',
         '#value' => $key,
       );
     }
   }
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-  );
-  return $form;
-}
-
-/**
- * Admin form submit.
- */
-function easyddb_ipe_filter_admin_submit($form, &$form_state) {
-  $settings = array();
-  foreach ($form_state['values']['table'] as $key => $content) {
-    if (isset($content['value']) && $content['value'] == 1) {
-      $settings[$key] = $content['category'];
-    }
-  }
-  variable_set('easyddb_ipe_filter', $settings);
+  return system_settings_form($form);
 }

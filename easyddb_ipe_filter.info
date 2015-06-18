@@ -2,7 +2,14 @@ name = easyDDB IPE Filter
 description = Filter configuration box in panels of the add content functionality
 core = 7.x
 package = easyDDB
-
-configure = admin/config/user-interface/ipe-filter
-files[] = easyddb_ipe_filter.admin.inc
+version = 7.x-1.0
+project = easyddb_ipe_filter
+dependencies[] = ctools
 dependencies[] = panels
+dependencies[] = strongarm
+configure = admin/config/user-interface/ipe-filter
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[variable][] = easyddb_ipe_filter_table
+files[] = easyddb_ipe_filter.admin.inc
+mtime = 1433336199
