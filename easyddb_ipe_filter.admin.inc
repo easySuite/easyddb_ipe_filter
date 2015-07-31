@@ -1,12 +1,14 @@
 <?php
 /**
- * @file easyddb_ipe_filter.admin.inc
+ * @file
+ *
+ * easyddb_ipe_filter.admin.inc
  */
 
 /**
- * Defines admin form.
+ * Defines pane list form.
  */
- function easyddb_ipe_filter_admin($form, &$form_state) {
+function easyddb_ipe_filter_admin_panes($form, &$form_state) {
   ctools_include('content');
   $content_types = ctools_content_get_available_types();
   $panel_editor = new panels_renderer_editor();
@@ -41,7 +43,47 @@
         '#type' => 'hidden',
         '#value' => $key,
       );
+      $form['easyddb_ipe_filter_table'][$content['subtype_name']]['delta'] = array(
+        '#type' => 'hidden',
+        '#value' => $content['title'],
+      );
+      $form['easyddb_ipe_filter_table'][$content['subtype_name']]['type'] = array(
+        '#type' => 'hidden',
+        '#value' => $content['type_name'],
+      );
+      $form['easyddb_ipe_filter_table'][$content['subtype_name']]['subtype'] = array(
+        '#type' => 'hidden',
+        '#value' => $content['subtype_name'],
+      );
     }
   }
+  return system_settings_form($form);
+}
+
+/**
+ * Defines admin form.
+ */
+function easyddb_ipe_filter_default_settings($form, &$form_state) {
+  $form['filter_fieldset'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Default IPE filter settings.'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+  );
+
+  $roles = user_roles(TRUE);
+  // Unset anonymous and authentificated roles.
+  unset($roles[1], $roles[2]);
+
+  $ipe_roles = variable_get('easyddb_ipe_filter_roles', array());
+  $form['filter_fieldset']['easyddb_ipe_filter_roles'] = array(
+    '#type' => 'checkboxes',
+    '#options' => $roles,
+    '#default_value' => $ipe_roles,
+  );
+
+  // Clear theme cache for hook_theme_registry_alter implementation.
+  $form['#submit'][] = 'drupal_theme_rebuild';
+
   return system_settings_form($form);
 }
