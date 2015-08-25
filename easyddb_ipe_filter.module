@@ -10,13 +10,29 @@ include_once 'easyddb_ipe_filter.features.inc';
  */
 function easyddb_ipe_filter_menu() {
   $items['admin/config/user-interface/ipe-filter'] = array(
+    'title' => 'IPE pane filter settings',
+    'description' => 'Configure IPE filter default options.',
+    'weight' => 1,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('easyddb_ipe_filter_default_settings'),
+    'access arguments' => array('access administration pages'),
+    'file' => 'easyddb_ipe_filter.admin.inc',
+  );
+  $items['admin/config/user-interface/ipe-filter/default'] = array(
+    'title' => 'Settings',
+    'description' => 'Default settings for IPE filter',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 1,
+  );
+  $items['admin/config/user-interface/ipe-filter/panes'] = array(
     'title' => 'IPE pane filter',
     'description' => 'Choose what content should be displayed on the add content modal page.',
     'page callback' => 'drupal_get_form',
-    'access callback' => 'user_access',
-    'access arguments' => array('administer pane access'),
-    'page arguments' => array('easyddb_ipe_filter_admin'),
+    'page arguments' => array('easyddb_ipe_filter_admin_panes'),
+    'access arguments' => array('access administration pages'),
     'file' => 'easyddb_ipe_filter.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
   );
   return $items;
 }
@@ -67,7 +83,13 @@ function theme_easyddb_ipe_filter_table($variables) {
  * Impalements hook_theme_registry_alter().
  */
 function easyddb_ipe_filter_theme_registry_alter(&$registry) {
-  $registry['panels_add_content_modal']['function'] = '_easyddb_ipe_filter_callback';
+  global $user;
+  $ipe_roles = variable_get('easyddb_ipe_filter_roles', array());
+  $roles = array_intersect(array_keys($user->roles), $ipe_roles);
+
+  if (!empty($roles)) {
+    $registry['panels_ipe_add_pane_button']['function'] = '_easyddb_ipe_filter_callback';
+  }
 }
 
 /**
@@ -76,6 +98,8 @@ function easyddb_ipe_filter_theme_registry_alter(&$registry) {
 function _easyddb_ipe_filter_callback($vars) {
   $assets_loaded = &drupal_static('ipe_assets_loaded', FALSE);
   $settings = variable_get('easyddb_ipe_filter_table', array());
+  $region_id  = $vars['region_id'];
+  $renderer = $vars['renderer'];
 
   $buttons = array();
   $menu_width = 300;
@@ -86,19 +110,17 @@ function _easyddb_ipe_filter_callback($vars) {
 
   foreach ($settings as $subtype_name => $setting) {
     if ($setting['value'] == 1) {
-      foreach ($vars['categories'][$setting['category']]['content'] as $content) {
-        if ($subtype_name == $content['subtype_name']) {
-          $buttons[] = l($content['title'], $vars['renderer']->get_url('add-pane', $vars['region'], $content['type_name'], $subtype_name), array('attributes' => $attributes));
-        }
-      }
+      $buttons[] = l($setting['delta'], $renderer->get_url('add-pane', $region_id, $setting['type'], $setting['subtype']), array('attributes' => $attributes));
     }
   }
-  $buttons = '<div id="ipe-add-' . $vars['region'] . '" class="panels-ipe-newblock ipe-popup">' . theme('item_list', array('items' => $buttons)) . '</div>';
+
+  $buttons = '<div id="ipe-add-' . $region_id . '" class="panels-ipe-newblock ipe-popup">' . theme('item_list', array('items' => $buttons)) . '</div>';
 
   if (!$assets_loaded) {
     $mod_path = drupal_get_path('module', 'easyddb_ipe_filter');
+    drupal_add_js($mod_path . '/js/ipe.js', 'file');
     drupal_add_css($mod_path . '/css/ipe.css', 'file');
     $assets_loaded = TRUE;
   }
-  return '<div class="panels-ipe-newblock panels-ipe-on">' . $buttons . '</div>';
+  return '<div class="panels-ipe-newblock panels-ipe-on">' . l(t('Add'), NULL, array('attributes' => array('class' => 'ipe-trigger', 'target_region' => $region_id))) . '</div>' . $buttons;
 }
