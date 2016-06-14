@@ -83,19 +83,17 @@ function theme_easyddb_ipe_filter_table($variables) {
  * Impalements hook_theme_registry_alter().
  */
 function easyddb_ipe_filter_theme_registry_alter(&$registry) {
-  global $user;
-  $ipe_roles = variable_get('easyddb_ipe_filter_roles', array());
-  $roles = array_intersect(array_keys($user->roles), $ipe_roles);
-
-  if (!empty($roles)) {
-    $registry['panels_ipe_add_pane_button']['function'] = '_easyddb_ipe_filter_callback';
-  }
+  $registry['panels_ipe_add_pane_button']['function'] = '_easyddb_ipe_filter_callback';
 }
 
 /**
  * Filter panes callback
  */
 function _easyddb_ipe_filter_callback($vars) {
+  global $user;
+  $ipe_roles = variable_get('easyddb_ipe_filter_roles', array());
+  $roles = array_intersect(array_keys($user->roles), $ipe_roles);
+
   $assets_loaded = &drupal_static('ipe_assets_loaded', FALSE);
   $settings = variable_get('easyddb_ipe_filter_table', array());
   $region_id  = $vars['region_id'];
@@ -114,7 +112,7 @@ function _easyddb_ipe_filter_callback($vars) {
     }
   }
 
-  $buttons = '<div id="ipe-add-' . $region_id . '" class="panels-ipe-newblock ipe-popup">' . theme('item_list', array('items' => $buttons)) . '</div>';
+  $buttons = '<div id="ipe-add-' . $region_id . '" class="panels-ipe-newblock ipe-popup hide">' . theme('item_list', array('items' => $buttons)) . '</div>';
 
   if (!$assets_loaded) {
     $mod_path = drupal_get_path('module', 'easyddb_ipe_filter');
@@ -122,5 +120,22 @@ function _easyddb_ipe_filter_callback($vars) {
     drupal_add_css($mod_path . '/css/ipe.css', 'file');
     $assets_loaded = TRUE;
   }
-  return '<div class="panels-ipe-newblock panels-ipe-on">' . l(t('Add'), NULL, array('attributes' => array('class' => 'ipe-trigger', 'target_region' => $region_id))) . '</div>' . $buttons;
+
+  $links = l(t('Add'), NULL, array(
+    'attributes' => array(
+      'class' => 'ipe-trigger',
+      'target_region' => $region_id
+    )
+  ));
+
+  // If user roles are not set then display default ipe modal window.
+  if (empty($roles)) {
+    $attributes = array(
+      'class' => array('panels-ipe-linkbar', 'inline'),
+    );
+    $links = theme('links', array('links' => $vars['links'], 'attributes' => $attributes));
+    $buttons = '';
+  }
+
+  return '<div class="panels-ipe-newblock panels-ipe-on">' . $links . '</div>' . $buttons;
 }
